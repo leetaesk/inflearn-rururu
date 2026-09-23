@@ -1,0 +1,22 @@
+{
+  "name": "inflearn-rururu",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "description": "로컬 인프런 연속 재생 확장 프로그램",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:e2e": "npm run build && playwright test",
+    "verify": "npm run check && npm test && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "^1.55.0",
+    "@types/chrome": "^0.1.12",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>루루루 · 인프런 연속 재생</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="dashboard.js" defer></script>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="masthead">
+        <div><h1>루루루<span>인프런 연속 재생</span></h1><p>들을 강좌를 모아두면, 차례대로 이어서.</p></div>
+        <button id="theme" class="quiet" type="button" aria-label="어두운 화면으로 변경">어두운 화면</button>
+      </header>
+      <main>
+        <p id="notice" class="notice" role="alert" hidden></p>
+        <section class="player" aria-labelledby="player-label" aria-busy="true">
+          <div class="player-heading"><h2 id="player-label">지금 재생</h2><span id="run-status">불러오는 중</span></div>
+          <h3 id="current-title">저장된 대기열을 불러오고 있습니다.</h3>
+          <p id="current-lesson" class="lesson"></p>
+          <p id="run-detail" class="detail" role="status">잠시만 기다려 주세요.</p>
+          <div class="timeline"><progress id="media-progress" max="100" value="0" aria-label="현재 영상 재생 위치"></progress><span id="media-time">재생 대기</span></div>
+          <div class="player-actions">
+            <button id="start" class="primary" disabled>대기열 재생</button>
+            <button id="pause" class="primary" hidden>일시정지</button>
+            <button id="focus" disabled>재생 탭 보기</button>
+            <button id="login" class="quiet">인프런 로그인</button>
+            <button id="skip" class="quiet" disabled>이 강좌 보류</button>
+          </div>
+          <p id="login-help" class="login-help" hidden>인프런에서 로그인한 뒤 이 화면의 ‘이어 재생’을 누르세요. 비밀번호는 확장 프로그램에 입력하지 않습니다.</p>
+        </section>
+        <div class="workspace">
+          <section class="queue-section" aria-labelledby="queue-label">
+            <div class="section-heading"><h2 id="queue-label">재생 대기열 <span id="queue-count">0</span></h2><button id="clear-done" class="quiet" disabled>완료 강좌 비우기</button></div>
+            <p id="queue-summary" class="secondary">강좌 순서대로 한 탭에서 재생합니다.</p>
+            <div id="empty" class="empty" hidden><strong>첫 강좌를 추가해 주세요.</strong><p>강좌 주소를 붙여넣거나<br>열려 있는 인프런 탭을 가져올 수 있습니다.</p></div>
+            <ol id="queue" class="queue"></ol>
+            <details class="history"><summary>재생 기록</summary><p id="no-logs" class="secondary">재생을 시작하면 기록이 여기에 쌓입니다.</p><ol id="logs"></ol></details>
+          </section>
+          <aside aria-label="강좌 추가와 재생 설정">
+            <section class="add-section" aria-labelledby="add-label">
+              <h2 id="add-label">강좌 추가</h2>
+              <form id="add-form">
+                <label for="urls">강좌 또는 강의실 주소</label>
+                <textarea id="urls" rows="4" placeholder="https://www.inflearn.com/course/…" aria-describedby="url-help" spellcheck="false" required></textarea>
+                <p id="url-help" class="hint">여러 주소는 한 줄에 하나씩 입력하세요.</p>
+                <div class="add-actions"><button type="submit">대기열에 추가</button><button id="import-tabs" type="button" class="quiet">열린 탭 가져오기</button></div>
+              </form>
+            </section>
+            <section class="settings-section" aria-labelledby="settings-label">
+              <h2 id="settings-label">재생 설정</h2>
+              <form id="settings-form">
+                <div class="setting-row"><label for="speed">재생 속도</label><select id="speed"><option value="1">1배속</option><option value="1.25">1.25배속</option><option value="1.5">1.5배속</option><option value="1.75">1.75배속</option><option value="2">2배속</option></select></div>
+                <label class="check-row"><span>음소거로 재생</span><input id="muted" type="checkbox" checked></label>
+                <label class="check-row"><span>재생 중 화면 절전 방지</span><input id="keep-awake" type="checkbox" checked></label>
+                <div class="text-setting"><label for="text-mode">영상 없는 자료 수업</label><select id="text-mode"><option value="pause">멈추고 직접 확인</option><option value="confirm">대기 후 ‘봤어요’ 자동 클릭</option></select></div>
+                <div id="text-wait-row" class="setting-row" hidden><label for="text-wait">자료 확인 대기</label><div class="number-unit"><input id="text-wait" type="number" min="65" max="600" step="1" value="65"><span>초</span></div></div>
+                <div class="text-setting"><label for="quiz-mode">객관식 퀴즈</label><select id="quiz-mode"><option value="auto">자동 제출하고 오답 재시도</option><option value="pause">멈추고 직접 진행</option></select></div>
+                <p class="hint">표시된 정오답을 기억해 오답을 제외합니다. 첫 시도는 틀릴 수 있으며, 인프런이 허용한 횟수만 재시도합니다.</p>
+                <div class="text-setting"><label for="mission-mode">미션</label><select id="mission-mode"><option value="draft">저장된 원고 자동 제출</option><option value="pause">멈추고 직접 진행</option></select></div>
+                <p class="hint">미션 원고가 필요하면 알려드립니다. 강사의 검토 대기는 완료와 별도로 표시합니다.</p>
+                <button type="submit" class="save-settings">설정 저장</button>
+                <span id="settings-status" role="status" class="hint"></span>
+              </form>
+            </section>
+          </aside>
+        </div>
+      </main>
+      <footer class="page-footer"><p>완료는 인프런의 수업·퀴즈·미션 표시로 확인합니다.<br>로그인한 Chrome을 켜 두세요. 이 화면은 닫아도 됩니다.</p><a href="help.html" target="_blank" rel="noreferrer">설치와 사용 안내</a></footer>
+    </div>
+  </body>
+</html>
