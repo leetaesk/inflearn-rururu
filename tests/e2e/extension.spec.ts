@@ -3,6 +3,45 @@ import AxeBuilder from '@axe-core/playwright';
 import { test, state } from './fixture.ts';
 import type { QuizMemory } from '../../src/model.ts';
 
+test('dismisses repeated review prompts before the next lesson and next course', async ({ dashboard, context }) => {
+  await dashboard.locator('#urls').fill('https://biz.inflearn.com/courses/lecture?courseId=116&unitId=1\nhttps://biz.inflearn.com/courses/lecture?courseId=101&unitId=1');
+  await dashboard.getByRole('button', { name: '대기열에 추가', exact: true }).click();
+  const opened = context.waitForEvent('page');
+  await dashboard.locator('#start').click();
+  const player = await opened;
+  await expect.poll(async () => (await state(dashboard)).run.status, { timeout: 40_000 }).toBe('done');
+  expect((await state(dashboard)).courses.map(course => course.status)).toEqual(['done', 'done']);
+  expect(await player.evaluate(() => sessionStorage.getItem('review-dismissals'))).toBe('2');
+  expect(await player.evaluate(() => sessionStorage.getItem('review-submissions'))).toBeNull();
+  expect(await player.evaluate(() => sessionStorage.getItem('review-blocked-navigation'))).toBeNull();
+});
+
+test('leaves unrelated later buttons and paused review prompts untouched', async ({ dashboard, context }) => {
+  await dashboard.locator('#urls').fill('https://www.inflearn.com/courses/lecture?courseId=103&unitId=1');
+  await dashboard.getByRole('button', { name: '대기열에 추가', exact: true }).click();
+  const opened = context.waitForEvent('page');
+  await dashboard.locator('#start').click();
+  const player = await opened;
+  await expect.poll(() => player.evaluate(() => !!document.querySelector('video') && !document.querySelector('video')!.paused)).toBe(true);
+  await player.evaluate(() => {
+    const prompt = document.createElement('div');
+    prompt.id = 'other-prompt'; prompt.setAttribute('role', 'dialog');
+    prompt.style.cssText = 'position:fixed;inset:0;background:white;z-index:1000';
+    prompt.innerHTML = '<h2>학습 알림 설정</h2><button>다음에</button>';
+    prompt.querySelector('button')!.onclick = () => prompt.remove();
+    document.body.append(prompt);
+  });
+  await player.waitForTimeout(2500);
+  await expect(player.locator('#other-prompt')).toBeVisible();
+  await dashboard.locator('#pause').click();
+  await player.locator('#other-prompt h2').evaluate(node => { node.textContent = '힘이 되는 수강평을 남겨주세요!'; });
+  await player.waitForTimeout(2500);
+  await expect(player.locator('#other-prompt')).toBeVisible();
+  await dashboard.locator('#start').click();
+  await expect(player.locator('#other-prompt')).toHaveCount(0);
+  await dashboard.locator('#pause').click();
+});
+
 test('login redirect offers official sign-in and resumes the same course after login', async ({ dashboard, context }) => {
   const loginOpened = context.waitForEvent('page');
   await dashboard.locator('#login').click();

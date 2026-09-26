@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "루루루 · 인프런 연속 재생",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "여러 인프런 강좌를 한 탭에서 순서대로 재생하고 수강 완료 표시를 확인합니다.",
   "minimum_chrome_version": "120",
   "permissions": ["storage", "alarms", "power"],

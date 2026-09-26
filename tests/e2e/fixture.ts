@@ -24,7 +24,7 @@ export const test = base.extend<{ context: BrowserContext; dashboard: Page; exte
         await route.fulfill({ status: 404, contentType: 'text/html', body: '<!doctype html><html lang="ko"><title>찾을 수 없음</title><p>404 Error Page Not Found</p></html>' });
         return;
       }
-      const names = ['alpha', 'beta', 'long', 'text', 'quiz', 'native-next', 'unconfirmed', 'text-auto', 'gamma', 'quiz-auto', 'mission-draft', 'mission-review', 'quiz-spa', 'auth-redirect', 'not-found'];
+      const names = ['alpha', 'beta', 'long', 'text', 'quiz', 'native-next', 'unconfirmed', 'text-auto', 'gamma', 'quiz-auto', 'mission-draft', 'mission-review', 'quiz-spa', 'auth-redirect', 'not-found', 'review-prompts'];
       const slug = url.searchParams.get('courseSlug') || names[Number(url.searchParams.get('courseId')) - 101] || 'alpha';
       if (slug === 'auth-redirect' && !route.request().headers().cookie?.includes('signed-in=yes')) {
         await route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="ko"><title>로그인 확인</title><script>location.replace("https://www.inflearn.com/signin")</script></html>' });
@@ -136,8 +136,29 @@ function classroom(slug: string) {
     function complete() {
       document.body.dataset.confirmedAt = String(Date.now());
       done.add(current); sessionStorage.setItem('done:' + slug, JSON.stringify([...done])); renderCounts();
+      if (slug === 'review-prompts') showReviewPrompt();
+    }
+    function showReviewPrompt() {
+      if (document.getElementById('review-prompt')) return;
+      const popup = document.createElement('div');
+      popup.id = 'review-prompt';
+      // The first prompt is semantic; the second reproduces a role-free portal.
+      if (current === '1') popup.setAttribute('role', 'dialog');
+      popup.style.cssText = 'position:fixed;inset:0;background:#6669;display:grid;place-items:center;z-index:1000';
+      popup.innerHTML = '<section style="background:white;padding:32px"><h2>힘이 되는 수강평을 남겨주세요!</h2><button id="rating">별점 선택</button><button id="review-later">다음에</button><button id="review-save" disabled>저장하기</button></section>';
+      popup.querySelector('#review-later').onclick = () => {
+        sessionStorage.setItem('review-dismissals', String(Number(sessionStorage.getItem('review-dismissals') || 0) + 1)); popup.remove();
+      };
+      popup.querySelector('#rating').onclick = popup.querySelector('#review-save').onclick = () => {
+        sessionStorage.setItem('review-submissions', '1');
+      };
+      document.body.append(popup);
     }
     function navigate(id) {
+      if (document.getElementById('review-prompt')) {
+        sessionStorage.setItem('review-blocked-navigation', String(Number(sessionStorage.getItem('review-blocked-navigation') || 0) + 1));
+        return;
+      }
       current = id;
       const url = new URL(location.href);url.searchParams.set('unitId',id);history.pushState({},'',url);
       renderCounts();

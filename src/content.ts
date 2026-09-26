@@ -1,4 +1,4 @@
-import { canConfirmCurrent, confirmCurrent, getVideo, goNext, goToUnit, readSnapshot, revealCurriculum } from './adapter.ts';
+import { canConfirmCurrent, confirmCurrent, dismissReviewPrompt, getVideo, goNext, goToUnit, readSnapshot, revealCurriculum } from './adapter.ts';
 import { allComplete } from './model.ts';
 import { quizStep, missionStep, assessmentIdleMs, resetAssessments } from './assessments.ts';
 import { parseCourseUrl } from './model.ts';
@@ -23,6 +23,7 @@ let revealedAt = 0;
 let finishedAt = 0;
 let completionSeenAt = 0;
 let failures = 0;
+let reviewPromptAt = 0;
 let navigationAttempts = new Map<string, number>();
 
 function resetLesson(key: string) {
@@ -50,6 +51,7 @@ function run(value: RunConfig) {
     navigationAttempts = new Map();
     failures = 0;
     lastReportAt = 0;
+    reviewPromptAt = 0;
   }
   config = value;
   stopped = false;
@@ -131,6 +133,14 @@ async function tick() {
     const key = `${snapshot.key}:${snapshot.unitId}`;
     if (key !== lessonKey) resetLesson(key);
     if (snapshot.problem) { await attention(snapshot, snapshot.problem); return; }
+    const review = dismissReviewPrompt();
+    if (review) {
+      if (!reviewPromptAt) reviewPromptAt = now;
+      if (now - reviewPromptAt > 30_000) await attention(snapshot, '수강평 안내를 닫지 못했습니다. 재생 탭에서 ‘다음에’를 누른 뒤 이어 재생해 주세요.');
+      else await report(snapshot, 'status', review === 'dismissed' ? '수강평 안내를 닫고 재생을 이어갑니다.' : '수강평 안내가 닫히기를 기다리고 있습니다.');
+      return;
+    }
+    reviewPromptAt = 0;
     if (now - revealedAt > 8000 && (!snapshot.units.length || !snapshot.progress)) {
       revealedAt = now;
       if (revealCurriculum()) return;

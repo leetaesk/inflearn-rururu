@@ -10,6 +10,36 @@ export function visible(element: Element): boolean {
 function usable(element: Element): boolean {
   return visible(element) && !element.hasAttribute('disabled') && element.getAttribute('aria-disabled') !== 'true' && getComputedStyle(element).pointerEvents !== 'none';
 }
+const reviewClicks = new WeakMap<HTMLElement, number>();
+export function dismissReviewPrompt(): 'dismissed' | 'waiting' | null {
+  let waiting = false;
+  for (const button of document.querySelectorAll<HTMLElement>('button, [role="button"]')) {
+    if (!/^(다음에|나중에)$/.test(label(button)) || !visible(button)) continue;
+    const dialog = button.closest('[role="dialog"], [role="alertdialog"], [aria-modal="true"], dialog');
+    let prompt: Element | null = dialog;
+    if (!dialog) {
+      // Some portals omit dialog semantics. Require a small fixed overlay so
+      // lesson text and an unrelated "later" button cannot match together.
+      let parent = button.parentElement;
+      for (let depth = 0; parent && parent !== document.body && depth < 6; depth++, parent = parent.parentElement) {
+        if ((parent.textContent || '').length > 1200) break;
+        if (getComputedStyle(parent).position === 'fixed') { prompt = parent; break; }
+      }
+    }
+    if (!prompt || !visible(prompt) || !/수강평(?:을)?\s*(?:남겨|작성)/.test(prompt.textContent || '')) continue;
+    waiting = true;
+    if (!usable(button) || button.closest('[inert]')) continue;
+    const rect = button.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    if (!hit || !button.contains(hit)) continue;
+    const now = Date.now();
+    if (now - (reviewClicks.get(button) || 0) < 3000) continue;
+    reviewClicks.set(button, now);
+    button.click();
+    return 'dismissed';
+  }
+  return waiting ? 'waiting' : null;
+}
 export function readProgress(root: Document = document, name = /^(진도율|Progress)$/i): Progress | null {
   const labels = [...root.querySelectorAll('p, span, dt, strong, [aria-label]')].filter(node => name.test(label(node)));
   for (const node of labels) {
