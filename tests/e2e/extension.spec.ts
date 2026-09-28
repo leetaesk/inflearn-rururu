@@ -22,7 +22,9 @@ test('leaves unrelated later buttons and paused review prompts untouched', async
   const opened = context.waitForEvent('page');
   await dashboard.locator('#start').click();
   const player = await opened;
-  await expect.poll(() => player.evaluate(() => !!document.querySelector('video') && !document.querySelector('video')!.paused)).toBe(true);
+  await player.waitForURL(url => url.searchParams.get('courseId') === '103');
+  await expect(player.locator('video')).toBeVisible();
+  await expect.poll(() => player.locator('video').evaluate(video => !(video as HTMLVideoElement).paused)).toBe(true);
   await player.evaluate(() => {
     const prompt = document.createElement('div');
     prompt.id = 'other-prompt'; prompt.setAttribute('role', 'dialog');
