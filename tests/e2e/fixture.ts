@@ -142,10 +142,12 @@ function classroom(slug: string) {
       if (document.getElementById('review-prompt')) return;
       const popup = document.createElement('div');
       popup.id = 'review-prompt';
-      // The first prompt is semantic; the second reproduces a role-free portal.
+      // The first prompt is semantic; the second reproduces a deeply nested,
+      // role-free portal. The accessible label may differ from rendered text.
       if (current === '1') popup.setAttribute('role', 'dialog');
       popup.style.cssText = 'position:fixed;inset:0;background:#6669;display:grid;place-items:center;z-index:1000';
-      popup.innerHTML = '<section style="background:white;padding:32px"><h2>힘이 되는 수강평을 남겨주세요!</h2><button id="rating">별점 선택</button><button id="review-later">다음에</button><button id="review-save" disabled>저장하기</button></section>';
+      const panel = '<section style="background:white;padding:32px"><h2>힘이 되는 수강평을 남겨주세요!</h2><button id="rating">별점 선택</button><button id="review-later" aria-label="수강평 팝업 닫기">다음에</button><button id="review-save" disabled>저장하기</button></section>';
+      popup.innerHTML = current === '1' ? panel : '<div>'.repeat(8) + panel + '</div>'.repeat(8);
       popup.querySelector('#review-later').onclick = () => {
         sessionStorage.setItem('review-dismissals', String(Number(sessionStorage.getItem('review-dismissals') || 0) + 1)); popup.remove();
       };

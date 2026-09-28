@@ -12,21 +12,26 @@ function usable(element: Element): boolean {
 }
 const reviewClicks = new WeakMap<HTMLElement, number>();
 export function dismissReviewPrompt(): 'dismissed' | 'waiting' | null {
+  const reviewTitle = /수강평(?:을)?\s*(?:남겨|작성)/;
   let waiting = false;
   for (const button of document.querySelectorAll<HTMLElement>('button, [role="button"]')) {
-    if (!/^(다음에|나중에)$/.test(label(button)) || !visible(button)) continue;
-    const dialog = button.closest('[role="dialog"], [role="alertdialog"], [aria-modal="true"], dialog');
-    let prompt: Element | null = dialog;
-    if (!dialog) {
-      // Some portals omit dialog semantics. Require a small fixed overlay so
-      // lesson text and an unrelated "later" button cannot match together.
-      let parent = button.parentElement;
-      for (let depth = 0; parent && parent !== document.body && depth < 6; depth++, parent = parent.parentElement) {
-        if ((parent.textContent || '').length > 1200) break;
-        if (getComputedStyle(parent).position === 'fixed') { prompt = parent; break; }
+    const rendered = (button.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!/^(다음에|나중에)$/.test(rendered) && !/^(다음에|나중에)$/.test(label(button))) continue;
+    if (!visible(button)) continue;
+    let prompt: Element | null = null;
+    // The review prompt can be a semantic dialog or a portal with a fixed
+    // backdrop. Walk through nested wrappers until the title and action share
+    // a small overlay; never use the full lesson page as the match.
+    for (let parent = button.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+      const content = parent.textContent || '';
+      if (content.length > 1200) break;
+      if (!reviewTitle.test(content)) continue;
+      if (parent.matches('[role="dialog"], [role="alertdialog"], [aria-modal="true"], dialog') || getComputedStyle(parent).position === 'fixed') {
+        prompt = parent;
+        break;
       }
     }
-    if (!prompt || !visible(prompt) || !/수강평(?:을)?\s*(?:남겨|작성)/.test(prompt.textContent || '')) continue;
+    if (!prompt || !visible(prompt)) continue;
     waiting = true;
     if (!usable(button) || button.closest('[inert]')) continue;
     const rect = button.getBoundingClientRect();
